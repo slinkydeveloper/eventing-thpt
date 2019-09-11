@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: bench-monitor
+  namespace: perf-eventing
+  labels:
+    bench: direct
+spec:
+  selector:
+    matchLabels:
+      bench: direct
+  endpoints:
+    - port: metrics            # works for different port numbers as long as the name matches
+      interval: 300ms
+      path: "/metrics"
+
+---
+
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+  namespace: perf-eventing
+  labels:
+    prometheus: prometheus
+spec:
+  serviceAccountName: prometheus-k8s
+  replicas: 1
+  version: v1.7.1
+  resources:
+    requests:
+      memory: 400Mi
+  serviceMonitorSelector:
+    matchLabels:
+      bench: direct

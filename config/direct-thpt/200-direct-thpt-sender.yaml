@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: direct-thpt-sender
+  namespace: perf-eventing
+  labels:
+    role: direct-thpt-sender
+spec:
+  restartPolicy: Never
+  containers:
+    - name: "direct-thpt-sender"
+      image: github.com/slinkydeveloper/eventing-thpt/cmd/sender
+      resources:
+        limits:
+          cpu: 1
+          memory: 4Gi
+        requests:
+          cpu: 1
+          memory: 4Gi
+      ports:
+        - containerPort: 8080
+        - containerPort: 2112
+          name: metrics
+      args:
+        - "--sink=http://direct-thpt-consumer.perf-eventing.svc.cluster.local"
+        - "--pace=5000:30,6000:30,7000:30,8000:30,9000:30,10000:30"
+        - "--workers=10"
+        - "--verbose"

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: direct-thpt-consumer
+  namespace: perf-eventing
+  labels:
+    bench: direct
+spec:
+  type: NodePort
+  selector:
+    role: direct-thpt-consumer
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+    name: http
+  - protocol: TCP
+    port: 2112
+    targetPort: metrics
+    name: metrics
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: direct-thpt-sender
+  namespace: perf-eventing
+  labels:
+    bench: direct
+spec:
+  type: NodePort
+  selector:
+    role: direct-thpt-sender
+  ports:
+    - protocol: TCP
+      port: 2112
+      targetPort: metrics
+      name: metrics
