@@ -28,27 +28,21 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
-	"strconv"
-	"strings"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	vegeta "github.com/tsenart/vegeta/lib"
 )
 
-const (
-	defaultDuration              = 10 * time.Second
-)
-
 // flags for the image
 var (
-	sinkURL  string
-	msgSize  int
-	workers  uint64
-	paceFlag string
-	verbose  bool
+	sinkURL     string
+	msgSize     int
+	workers     uint64
+	paceFlag    string
+	verbose     bool
 	metricsPort int
-	fatalf   = log.Fatalf
+	fatalf      = log.Fatalf
 )
 
 func init() {
@@ -60,18 +54,13 @@ func init() {
 	flag.Uint64Var(&workers, "workers", 1, "Number of vegeta workers")
 }
 
-type paceSpec struct {
-	rps      int
-	duration time.Duration
-}
-
 type attackSpec struct {
-	pacer vegeta.Pacer
+	pacer    vegeta.Pacer
 	duration time.Duration
 }
 
 func (a attackSpec) Attack(i int, targeter vegeta.Targeter, attacker *vegeta.Attacker, c prometheus.Counter, ceClient cloudevents.Client) {
-	printf("Starting attack %d° with pace %v rps for %v seconds", i + 1, a.pacer, a.duration)
+	printf("Starting attack %d° with pace %v rps for %v seconds", i+1, a.pacer, a.duration)
 	res := attacker.Attack(targeter, a.pacer, a.duration, fmt.Sprintf("%s-attack-%d", common.EventSource, i))
 	for _ = range res {
 		c.Inc()
@@ -108,7 +97,7 @@ func main() {
 		fatalf("sink not set!")
 	}
 
-	pacerSpecs, err := parsePaceSpec()
+	pacerSpecs, err := common.ParsePaceSpec(paceFlag)
 	if err != nil {
 		fatalf("%+v", err)
 	}
@@ -156,9 +145,9 @@ func main() {
 	var totalBenchmarkDuration time.Duration = 0
 
 	for i, ps := range pacerSpecs {
-		attacks[i] = attackSpec{pacer: vegeta.ConstantPacer{Freq: ps.rps, Per: time.Second}, duration: ps.duration}
-		printf("%d° pace: %d rps for %v seconds", i+1, ps.rps, ps.duration)
-		totalBenchmarkDuration = totalBenchmarkDuration + ps.duration
+		attacks[i] = attackSpec{pacer: vegeta.ConstantPacer{Freq: ps.Rps, Per: time.Second}, duration: ps.Duration}
+		printf("%d° pace: %d rps for %v seconds", i+1, ps.Rps, ps.Duration)
+		totalBenchmarkDuration = totalBenchmarkDuration + ps.Duration
 	}
 
 	printf("Total benchmark duration: %v", totalBenchmarkDuration.Seconds())
@@ -179,32 +168,6 @@ func main() {
 	printf("--- END BENCHMARK ---")
 
 	time.Sleep(2 * time.Minute)
-}
-
-func parsePaceSpec() ([]paceSpec, error) {
-	paceSpecArray := strings.Split(paceFlag, ",")
-	pacerSpecs := make([]paceSpec, 0)
-
-	for _, p := range paceSpecArray {
-		ps := strings.Split(p, ":")
-		rps, err := strconv.Atoi(ps[0])
-		if err != nil {
-			return nil, fmt.Errorf("error while parsing pace spec %v: %v", ps, err)
-		}
-		duration := defaultDuration
-
-		if len(ps) == 2 {
-			durationSec, err := strconv.Atoi(ps[1])
-			if err != nil {
-				return nil, fmt.Errorf("error while parsing pace spec %v: %v", ps, err)
-			}
-			duration = time.Second * time.Duration(durationSec)
-		}
-
-		pacerSpecs = append(pacerSpecs, paceSpec{rps, duration})
-	}
-
-	return pacerSpecs, nil
 }
 
 func sendGCEvent(ceClient cloudevents.Client) {

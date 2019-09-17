@@ -17,18 +17,11 @@ limitations under the License.
 package common
 
 import (
-	"math/rand"
-	"net/http"
-	"strconv"
-	"time"
-
 	cehttp "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	vegeta "github.com/tsenart/vegeta/lib"
+	"net/http"
+	"strconv"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 type CloudEventsTargeter struct {
 	sinkUrl          string
@@ -36,17 +29,6 @@ type CloudEventsTargeter struct {
 	eventType        string
 	eventSource      string
 	encodingSelector cehttp.EncodingSelector
-}
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-// generateRandString returns a random string with the given length.
-func generateRandString(length int) string {
-	b := make([]rune, length)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
 }
 
 func NewCloudEventsTargeter(sinkUrl string, msgSize int, eventType string, eventSource string, encoding string) CloudEventsTargeter {
@@ -68,7 +50,7 @@ func NewCloudEventsTargeter(sinkUrl string, msgSize int, eventType string, event
 func (cet CloudEventsTargeter) VegetaTargeter() vegeta.Targeter {
 	seq := uint64(0)
 
-	b := []byte(generateRandString(cet.msgSize))
+	b := GenerateRandByteArray(cet.msgSize)
 
 	return func(t *vegeta.Target) error {
 		t.Method = http.MethodPost
