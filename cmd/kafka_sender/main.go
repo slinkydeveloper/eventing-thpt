@@ -1,6 +1,7 @@
 package kafka_sender
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/slinkydeveloper/eventing-thpt/pkg/common"
@@ -90,9 +91,9 @@ func sendBurst(input chan<- *sarama.ProducerMessage, topic string, messageSize i
 }
 
 func generateMessage(topic string, messageSize int) *sarama.ProducerMessage {
-	payload := common.GenerateRandByteArray(messageSize)
+	j, _ := json.Marshal(map[string]string{"payload": common.GenerateRandString(messageSize)})
 	return &sarama.ProducerMessage{
 		Topic: topic,
-		Value: sarama.ByteEncoder(payload),
+		Value: sarama.ByteEncoder(j),
 	}
 }
